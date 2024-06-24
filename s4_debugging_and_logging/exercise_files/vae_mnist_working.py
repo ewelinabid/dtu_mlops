@@ -32,6 +32,7 @@ test_dataset  = MNIST(dataset_path, transform=mnist_transform, train=False, down
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_loader  = DataLoader(dataset=test_dataset,  batch_size=batch_size, shuffle=False)
 
+
 class Encoder(nn.Module):  
     def __init__(self, input_dim, hidden_dim, latent_dim):
         super(Encoder, self).__init__()
@@ -85,7 +86,22 @@ class Model(nn.Module):
 encoder = Encoder(input_dim=x_dim, hidden_dim=hidden_dim, latent_dim=latent_dim)
 decoder = Decoder(latent_dim=latent_dim, hidden_dim = hidden_dim, output_dim = x_dim)
 
+
+import wandb
+wandb.init(project="my-test-project", entity="ewebid")
+
 model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
+# Magic
+wandb.watch(model, log_freq=100)
+
+wandb.config = {
+  "learning_rate": 0.001,
+  "epochs": 100,
+  "batch_size": 128
+}
+
+
+#model = Model(Encoder=encoder, Decoder=decoder).to(DEVICE)
 
 from torch.optim import Adam
 
@@ -117,6 +133,10 @@ for epoch in range(epochs):
         
         loss.backward()
         optimizer.step()
+        wandb.log({'loss': loss})
+        images = wandb.Image(x_hat, caption="Top: Output, Bottom: Input")
+
+        
     print("\tEpoch", epoch + 1, "complete!", "\tAverage Loss: ", overall_loss / (batch_idx*batch_size))    
 print("Finish!!")
 
